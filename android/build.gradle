@@ -11,6 +11,9 @@ buildscript {
     classpath "com.android.tools.build:gradle:7.2.1"
     // noinspection DifferentKotlinGradleVersion
     classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    
+    // sinch flash call SDK
+    implementation "com.sinch.android.sdk.verification:verification-flashcall:2.1.14"
   }
 }
 

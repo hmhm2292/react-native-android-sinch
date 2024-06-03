@@ -15,3 +15,5 @@ class AndroidSinchPackage : ReactPackage {
     return emptyList()
   }
 }
+
+
