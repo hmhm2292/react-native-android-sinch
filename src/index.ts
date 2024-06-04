@@ -3,43 +3,42 @@ import {
   Platform,
   DeviceEventEmitter,
   EmitterSubscription,
-} from 'react-native'
-
+} from 'react-native';
 
 // Define types for the events data if they are known
 interface EventData {
-  message: string // Example type, adjust according to actual data
+  message: string; // Example type, adjust according to actual data
 }
 
 // Mapping of event names to their expected data types
 type EventMap = {
-  verificationSuccess: EventData
-  verificationFailed: EventData
-  verificationInitiated: EventData
-  verificationNotInitialized: EventData
-  verificationEvent: EventData // Example, adjust as needed
-}
+  verificationSuccess: EventData;
+  verificationFailed: EventData;
+  verificationInitiated: EventData;
+  verificationNotInitialized: EventData;
+  verificationEvent: EventData; // Example, adjust as needed
+};
 
 interface SinchFlashCallInterface {
-  requestPermissions: () => Promise<boolean>
+  requestPermissions: () => Promise<boolean>;
   initVerification: (
     phoneNumber: string,
     appKey: string,
-    appSecret?: string,
-  ) => Promise<boolean | string>
-  getLastCallNumberFromCallLog: () => Promise<string | null>
-  verifyCode: (code: string) => Promise<string>
-  stopVerification: () => Promise<string>
+    appSecret?: string
+  ) => Promise<boolean | string>;
+  getLastCallNumberFromCallLog: () => Promise<string | null>;
+  verifyCode: (code: string) => Promise<string>;
+  stopVerification: () => Promise<string>;
   addListener: <K extends keyof EventMap>(
     event: K,
-    callback: (data: EventMap[K]) => void,
-  ) => void
-  removeListener: (event: string) => void
-  removeAllListeners: () => void
+    callback: (data: EventMap[K]) => void
+  ) => void;
+  removeListener: (event: string) => void;
+  removeAllListeners: () => void;
 }
 
 const SinchFlashCall: SinchFlashCallInterface = (() => {
-  const activeListeners = new Map<string, EmitterSubscription>()
+  const activeListeners = new Map<string, EmitterSubscription>();
 
   return {
     /**
@@ -49,13 +48,13 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
       if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {
         try {
           const granted =
-            await NativeModules.AndroidSinchModule.requestPermissions()
-          return granted
+            await NativeModules.AndroidSinchModule.requestPermissions();
+          return granted;
         } catch (error) {
-          return false
+          return false;
         }
       } else {
-        return false
+        return false;
       }
     },
 
@@ -65,7 +64,7 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
     initVerification: async (
       phoneNumber: string,
       appKey: string,
-      appSecret = '',
+      appSecret = ''
     ) => {
       if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {
         try {
@@ -73,15 +72,15 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
             await NativeModules.AndroidSinchModule.initVerification(
               phoneNumber,
               appKey,
-              appSecret,
-            )
-     
-          return result
+              appSecret
+            );
+
+          return result;
         } catch (error) {
-          return false
+          return false;
         }
       } else {
-        return false
+        return false;
       }
     },
 
@@ -92,13 +91,13 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
       if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {
         try {
           const number =
-            await NativeModules.AndroidSinchModule.getLastCallNumber()
-          return number
+            await NativeModules.AndroidSinchModule.getLastCallNumber();
+          return number;
         } catch (error) {
-          return null
+          return null;
         }
       } else {
-        return null
+        return null;
       }
     },
 
@@ -114,8 +113,8 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
       if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {
         try {
           const result =
-            await NativeModules.AndroidSinchModule.verifyCode(code)
-          return result
+            await NativeModules.AndroidSinchModule.verifyCode(code);
+          return result;
         } catch (error) {}
       }
     },
@@ -127,11 +126,11 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
       if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {
         try {
           const result =
-            await NativeModules.AndroidSinchModule.stopVerification()
+            await NativeModules.AndroidSinchModule.stopVerification();
 
-          return result
+          return result;
         } catch (error) {
-          return false
+          return false;
         }
       }
     },
@@ -141,16 +140,14 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
      */
     addListener: <K extends keyof EventMap>(
       event: K,
-      callback: (data: EventMap[K]) => void,
+      callback: (data: EventMap[K]) => void
     ) => {
       if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {
-
         const subscription = DeviceEventEmitter.addListener(
           event,
-          callback as any,
-        )
-        activeListeners.set(event, subscription)
-
+          callback as any
+        );
+        activeListeners.set(event, subscription);
       }
     },
 
@@ -159,25 +156,24 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
      */
     removeListener: (event: string) => {
       if (activeListeners.has(event)) {
-        const subscription = activeListeners.get(event)
+        const subscription = activeListeners.get(event);
         if (subscription) {
-          subscription.remove()
-          activeListeners.delete(event)
+          subscription.remove();
+          activeListeners.delete(event);
         }
       }
-    
     },
 
     /**
      * @description use to when remove all the listeners at once.
      */
     removeAllListeners: () => {
-      activeListeners.forEach((subscription, event) => {
-        subscription.remove()
-      })
-      activeListeners.clear()
+      activeListeners.forEach((subscription) => {
+        subscription.remove();
+      });
+      activeListeners.clear();
     },
-  }
-})()
+  };
+})();
 
-export default SinchFlashCall
+export default SinchFlashCall;
