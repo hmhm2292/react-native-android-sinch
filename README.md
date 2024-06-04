@@ -10,6 +10,14 @@ npm install react-native-android-sinch
 yarn add react-native-android-sinch
 ```
 
+## Sinch version
+
+```sh
+com.sinch.android.sdk.verification:verification-flashcall:2.1.14
+```
+
+
+
 ## Usage
 
 ```js
