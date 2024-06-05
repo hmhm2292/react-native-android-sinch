@@ -25,7 +25,7 @@ import android.provider.CallLog
 import com.facebook.react.modules.core.DeviceEventManagerModule
 import com.sinch.verification.core.internal.VerificationMethodType
 
-class AndroidSinchModule (private val reactContext: ReactApplicationContext) :
+class AndroidSinchModule(private val reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext), PermissionListener, VerificationListener {
 
     companion object {
@@ -85,13 +85,14 @@ class AndroidSinchModule (private val reactContext: ReactApplicationContext) :
         grantResults: IntArray
     ): Boolean {
         if (requestCode == PERMISSION_REQUEST_CODE) {
-            val allPermissionsGranted = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
+            val allPermissionsGranted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
             permissionPromise?.let {
                 if (allPermissionsGranted) {
                     it.resolve(true)
                 } else {
                     it.reject("E_PERMISSIONS_DENIED", "Permissions were denied")
                 }
+                permissionPromise = null
             }
             return allPermissionsGranted
         }
@@ -162,12 +163,26 @@ class AndroidSinchModule (private val reactContext: ReactApplicationContext) :
         }
     }
 
-    // flashCall 에서 걸려오는번호로 인증 하면 됨 , method 는 FlashCall 로 하드코딩
     @ReactMethod
-    fun verifyCode(code: String, promise: Promise) {
+    // if verification does not work automatically, use verify code method,
+    // for FLASHCALL the code is the number that the call was made with
+    fun verifyCode(code: String, methodType: String, promise: Promise) {
+        val verificationMethodType = when (methodType) {
+            "FLASHCALL" -> VerificationMethodType.FLASHCALL
+            "SMS" -> VerificationMethodType.SMS
+            "CALL" -> VerificationMethodType.CALL
+            // Add other method types as needed
+            else -> null
+        }
+
+        if (verificationMethodType == null) {
+            promise.reject("INVALID_METHOD_TYPE", "Invalid verification method type")
+            return
+        }
+
         if (verification != null) {
             this.verificationPromise = promise
-            verification?.verify(code, VerificationMethodType.FLASHCALL)
+            verification?.verify(code, verificationMethodType)
         } else {
             promise.reject("NO_VERIFICATION", "No verification has been initialized")
             sendEvent("verificationNotInitialized", "Verification not initialized")
@@ -226,7 +241,7 @@ class AndroidSinchModule (private val reactContext: ReactApplicationContext) :
         sendEvent("verificationEvent", eventDetails)
     }
 
-    // react native 쪽으로 event 전송 해주는 메소드
+    // sends event to JS side
     private fun sendEvent(eventName: String, eventData: String) {
         reactContext
             .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)

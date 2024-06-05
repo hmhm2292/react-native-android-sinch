@@ -19,21 +19,27 @@ type EventMap = {
   verificationEvent: EventData; // Example, adjust as needed
 };
 
+// Define the types for VerificationMethodType
+type VerificationMethodType = 'FLASHCALL' | 'SMS' | 'CALL'; // Add other method types as needed
+
 interface SinchFlashCallInterface {
   requestPermissions: () => Promise<boolean>;
   initVerification: (
     phoneNumber: string,
     appKey: string,
     appSecret?: string
-  ) => Promise<boolean | string>;
+  ) => Promise<string>;
   getLastCallNumberFromCallLog: () => Promise<string | null>;
-  verifyCode: (code: string) => Promise<string>;
+  verifyCode: (
+    code: string,
+    methodType: VerificationMethodType
+  ) => Promise<string>;
   stopVerification: () => Promise<string>;
   addListener: <K extends keyof EventMap>(
     event: K,
     callback: (data: EventMap[K]) => void
   ) => void;
-  removeListener: (event: string) => void;
+  removeListener: <K extends keyof EventMap>(event: K) => void;
   removeAllListeners: () => void;
 }
 
@@ -54,7 +60,7 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
           return false;
         }
       } else {
-        return false;
+        console.warn('Sinch Flash Call is only available on Android');
       }
     },
 
@@ -77,10 +83,10 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
 
           return result;
         } catch (error) {
-          return false;
+          return error;
         }
       } else {
-        return false;
+        console.warn('Sinch Flash Call is only available on Android');
       }
     },
 
@@ -94,10 +100,10 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
             await NativeModules.AndroidSinchModule.getLastCallNumber();
           return number;
         } catch (error) {
-          return null;
+          return error;
         }
       } else {
-        return null;
+        console.warn('Sinch Flash Call is only available on Android');
       }
     },
 
@@ -109,13 +115,19 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
      * by calling verification.verify method and passing the number you’re receiving the call from as an argument.
      * Use getLastCallNumberFromCallLog to get the number.
      */
-    verifyCode: async (code: string) => {
+    verifyCode: async (code: string, methodType: VerificationMethodType) => {
       if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {
         try {
-          const result =
-            await NativeModules.AndroidSinchModule.verifyCode(code);
+          const result = await NativeModules.AndroidSinchModule.verifyCode(
+            code,
+            methodType
+          );
           return result;
-        } catch (error) {}
+        } catch (error) {
+          return error;
+        }
+      } else {
+        console.warn('Sinch Flash Call is only available on Android');
       }
     },
 
@@ -127,11 +139,12 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
         try {
           const result =
             await NativeModules.AndroidSinchModule.stopVerification();
-
           return result;
         } catch (error) {
-          return false;
+          return error;
         }
+      } else {
+        console.warn('Sinch Flash Call is only available on Android');
       }
     },
 
@@ -148,19 +161,25 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
           callback as any
         );
         activeListeners.set(event, subscription);
+      } else {
+        console.warn('Sinch Flash Call is only available on Android');
       }
     },
 
     /**
      * @description use to when remove the listeners added.
      */
-    removeListener: (event: string) => {
-      if (activeListeners.has(event)) {
-        const subscription = activeListeners.get(event);
-        if (subscription) {
-          subscription.remove();
-          activeListeners.delete(event);
+    removeListener: <K extends keyof EventMap>(event: K) => {
+      if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {
+        if (activeListeners.has(event)) {
+          const subscription = activeListeners.get(event);
+          if (subscription) {
+            subscription.remove();
+            activeListeners.delete(event);
+          }
         }
+      } else {
+        console.warn('Sinch Flash Call is only available on Android');
       }
     },
 
@@ -168,10 +187,14 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
      * @description use to when remove all the listeners at once.
      */
     removeAllListeners: () => {
-      activeListeners.forEach((subscription) => {
-        subscription.remove();
-      });
-      activeListeners.clear();
+      if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {
+        activeListeners.forEach((subscription) => {
+          subscription.remove();
+        });
+        activeListeners.clear();
+      } else {
+        console.warn('Sinch Flash Call is only available on Android');
+      }
     },
   };
 })();
