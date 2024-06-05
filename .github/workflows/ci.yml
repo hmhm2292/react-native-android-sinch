@@ -51,12 +51,18 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TURBO_CACHE_DIR: .turbo/android
+      GRADLE_OPTS: "-Xmx4096m -XX:MaxPermSize=512m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8"
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup
-        uses: ./.github/actions/setup
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install dependencies
+        run: yarn install
 
       - name: Cache turborepo for Android
         uses: actions/cache@v3
@@ -94,6 +100,7 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ github.run_id }}
 
       - name: Build example for Android
+        working-directory: example
         env:
           JAVA_OPTS: "-XX:MaxHeapSize=6g"
         run: |
@@ -107,8 +114,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup
-        uses: ./.github/actions/setup
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install dependencies
+        run: yarn install
 
       - name: Cache turborepo for iOS
         uses: actions/cache@v3
@@ -142,5 +154,6 @@ jobs:
           NO_FLIPPER: 1
 
       - name: Build example for iOS
+        working-directory: example
         run: |
           yarn turbo run build:ios --cache-dir="${{ env.TURBO_CACHE_DIR }}"
