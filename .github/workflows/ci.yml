@@ -62,9 +62,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ env.TURBO_CACHE_DIR }}
-          key: ${{ runner.os }}-turborepo-android-${{ hashFiles('yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-turborepo-android-
+          key: ${{ runner.os }}-turborepo-android-${{ github.run_id }}
 
       - name: Check turborepo cache for Android
         run: |
@@ -93,9 +91,7 @@ jobs:
           path: |
             ~/.gradle/wrapper
             ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('example/android/gradle/wrapper/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+          key: ${{ runner.os }}-gradle-${{ github.run_id }}
 
       - name: Build example for Android
         env:
@@ -118,9 +114,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ env.TURBO_CACHE_DIR }}
-          key: ${{ runner.os }}-turborepo-ios-${{ hashFiles('yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-turborepo-ios-
+          key: ${{ runner.os }}-turborepo-ios-${{ github.run_id }}
 
       - name: Check turborepo cache for iOS
         run: |
@@ -137,9 +131,7 @@ jobs:
         with:
           path: |
             **/ios/Pods
-          key: ${{ runner.os }}-cocoapods-${{ hashFiles('example/ios/Podfile.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cocoapods-
+          key: ${{ runner.os }}-cocoapods-${{ github.run_id }}
 
       - name: Install cocoapods
         if: env.turbo_cache_hit != 1 && steps.cocoapods-cache.outputs.cache-hit != 'true'
