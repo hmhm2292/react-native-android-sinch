@@ -59,7 +59,10 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: '16'
+          node-version: '18'
+
+      - name: Install TurboRepo
+        run: yarn global add turbo
 
       - name: Install dependencies
         run: yarn install
@@ -117,7 +120,10 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: '16'
+          node-version: '18'
+
+      - name: Install TurboRepo
+        run: yarn global add turbo
 
       - name: Install dependencies
         run: yarn install
