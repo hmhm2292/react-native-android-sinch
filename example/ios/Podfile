@@ -1,18 +1,11 @@
-require 'json'
-require 'pathname'
-
 # Resolve react_native_pods.rb with node to allow for hoisting
-react_native_pods_path = Pod::Executable.execute_command('node', ['-p', <<-JS
-  require.resolve(
-    'react-native/scripts/react_native_pods.rb',
-    { paths: [process.argv[1]] }
-  )
-JS
-, __dir__]).strip
+require Pod::Executable.execute_command('node', ['-p',
+  'require.resolve(
+    "react-native/scripts/react_native_pods.rb",
+    {paths: [process.argv[1]]},
+  )', __dir__]).strip
 
-require react_native_pods_path
-
-platform :ios, '11.0'
+platform :ios, min_ios_version_supported
 prepare_react_native_project!
 
 linkage = ENV['USE_FRAMEWORKS']
@@ -36,6 +29,12 @@ target 'AndroidSinchExample' do
   end
 
   post_install do |installer|
-    react_native_post_install(installer)
+    # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
+    react_native_post_install(
+      installer,
+      config[:reactNativePath],
+      :mac_catalyst_enabled => false,
+      # :ccache_enabled => true
+    )
   end
 end
