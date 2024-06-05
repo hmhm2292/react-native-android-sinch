@@ -20,7 +20,7 @@ type EventMap = {
 };
 
 // Define the types for VerificationMethodType
-type VerificationMethodType = 'FLASHCALL' | 'SMS' | 'CALL'; // Add other method types as needed
+type VerificationMethodType = 'FLASHCALL' | 'SMS'; // Add other method types as needed
 
 interface SinchFlashCallInterface {
   requestPermissions: () => Promise<boolean>;

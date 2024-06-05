@@ -170,7 +170,6 @@ class AndroidSinchModule(private val reactContext: ReactApplicationContext) :
         val verificationMethodType = when (methodType) {
             "FLASHCALL" -> VerificationMethodType.FLASHCALL
             "SMS" -> VerificationMethodType.SMS
-            "CALL" -> VerificationMethodType.CALL
             // Add other method types as needed
             else -> null
         }
