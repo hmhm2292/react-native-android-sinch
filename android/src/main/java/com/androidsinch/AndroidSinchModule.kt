@@ -5,28 +5,24 @@ import android.app.Activity
 import android.content.pm.PackageManager
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.facebook.react.bridge.ReactApplicationContext
-import com.facebook.react.bridge.ReactContextBaseJavaModule
-import com.facebook.react.bridge.ReactMethod
-import com.facebook.react.bridge.Promise
+import com.facebook.react.bridge.*
+import com.facebook.react.modules.core.DeviceEventManagerModule
 import com.facebook.react.modules.core.PermissionListener
-import com.sinch.verification.core.verification.VerificationEvent
+import com.facebook.react.modules.core.PermissionAwareActivity
 import com.sinch.verification.core.auth.AppKeyAuthorizationMethod
 import com.sinch.verification.core.auth.BasicAuthorizationMethod
 import com.sinch.verification.core.config.general.SinchGlobalConfig
 import com.sinch.verification.core.internal.Verification
+import com.sinch.verification.core.verification.VerificationEvent
 import com.sinch.verification.core.verification.response.VerificationListener
 import com.sinch.verification.flashcall.FlashCallVerificationMethod
 import com.sinch.verification.flashcall.config.FlashCallVerificationConfig
 import com.sinch.verification.flashcall.initialization.FlashCallInitializationListener
 import com.sinch.verification.flashcall.initialization.FlashCallInitializationResponseData
-import com.facebook.react.bridge.Arguments
 import android.provider.CallLog
-import com.facebook.react.modules.core.DeviceEventManagerModule
-import com.sinch.verification.core.internal.VerificationMethodType
 
 class AndroidSinchModule(private val reactContext: ReactApplicationContext) :
-    ReactContextBaseJavaModule(reactContext), PermissionListener, VerificationListener {
+    ReactContextBaseJavaModule(reactContext), PermissionListener, VerificationListener, ActivityEventListener {
 
     companion object {
         private const val PERMISSION_REQUEST_CODE = 5
@@ -35,6 +31,10 @@ class AndroidSinchModule(private val reactContext: ReactApplicationContext) :
     private var permissionPromise: Promise? = null
     private var verification: Verification? = null
     private var verificationPromise: Promise? = null
+
+    init {
+        reactContext.addActivityEventListener(this)
+    }
 
     override fun getName(): String {
         return "AndroidSinchModule"
@@ -52,14 +52,15 @@ class AndroidSinchModule(private val reactContext: ReactApplicationContext) :
         if (checkPermissions(activity)) {
             promise.resolve(true)
         } else {
-            ActivityCompat.requestPermissions(
-                activity,
+            val permissionAwareActivity = activity as PermissionAwareActivity
+            permissionAwareActivity.requestPermissions(
                 arrayOf(
                     Manifest.permission.READ_PHONE_STATE,
                     Manifest.permission.ACCESS_NETWORK_STATE,
                     Manifest.permission.READ_CALL_LOG
                 ),
-                PERMISSION_REQUEST_CODE
+                PERMISSION_REQUEST_CODE,
+                this
             )
         }
     }
@@ -164,8 +165,6 @@ class AndroidSinchModule(private val reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    // if verification does not work automatically, use verify code method,
-    // for FLASHCALL the code is the number that the call was made with
     fun verifyCode(code: String, methodType: String, promise: Promise) {
         val verificationMethodType = when (methodType) {
             "FLASHCALL" -> VerificationMethodType.FLASHCALL
@@ -245,5 +244,13 @@ class AndroidSinchModule(private val reactContext: ReactApplicationContext) :
         reactContext
             .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
             .emit(eventName, eventData)
+    }
+
+    override fun onActivityResult(activity: Activity?, requestCode: Int, resultCode: Int, data: Intent?) {
+        // Not used, but required for ActivityEventListener
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        // Not used, but required for ActivityEventListener
     }
 }

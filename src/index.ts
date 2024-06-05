@@ -57,6 +57,7 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
             await NativeModules.AndroidSinchModule.requestPermissions();
           return granted;
         } catch (error) {
+          console.error('Permission request error:', error);
           return false;
         }
       } else {
