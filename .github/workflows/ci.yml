@@ -141,8 +141,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cocoapods-
 
-      - name: Install cocoapods
+      - name: Update cocoapods
         if: env.turbo_cache_hit != 1 && steps.cocoapods-cache.outputs.cache-hit != 'true'
+        run: |
+          cd example/ios
+          pod update
+        env:
+          NO_FLIPPER: 1
+
+      - name: Install cocoapods
+        if: env.turbo_cache_hit != 1 && steps.cocoapods-cache.outputs.cache-hit == 'true'
         run: |
           cd example/ios
           pod install --repo-update

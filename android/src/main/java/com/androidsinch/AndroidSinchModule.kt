@@ -2,6 +2,7 @@ package com.androidsinch
 
 import android.Manifest
 import android.app.Activity
+import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -13,6 +14,7 @@ import com.sinch.verification.core.auth.AppKeyAuthorizationMethod
 import com.sinch.verification.core.auth.BasicAuthorizationMethod
 import com.sinch.verification.core.config.general.SinchGlobalConfig
 import com.sinch.verification.core.internal.Verification
+import com.sinch.verification.core.internal.VerificationMethodType
 import com.sinch.verification.core.verification.VerificationEvent
 import com.sinch.verification.core.verification.response.VerificationListener
 import com.sinch.verification.flashcall.FlashCallVerificationMethod
