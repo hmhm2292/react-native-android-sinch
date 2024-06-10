@@ -138,21 +138,7 @@ class AndroidSinchModule(private val reactContext: ReactApplicationContext) :
                 if (allGranted) {
                     it.resolve(true)
                 } else {
-                    val deniedPermissions = permissions.filterIndexed { index, _ ->
-                        grantResults[index] != PackageManager.PERMISSION_GRANTED
-                    }
-                    // Re-request denied permissions
-                    if (deniedPermissions.isNotEmpty()) {
-                        val activity = currentActivity as PermissionAwareActivity
-                        permissionPromises[requestCode] = it
-                        activity.requestPermissions(
-                            deniedPermissions.toTypedArray(),
-                            requestCode,
-                            this
-                        )
-                    } else {
-                        it.reject("E_PERMISSIONS_DENIED", "Essential permissions were denied")
-                    }
+                    it.reject("E_PERMISSIONS_DENIED", "Essential permissions were denied")
                 }
             }
         } else {
