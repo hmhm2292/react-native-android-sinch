@@ -160,6 +160,7 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
      * - Manifest.permission.READ_PHONE_STATE
      * - Manifest.permission.ACCESS_NETWORK_STATE
      * - Manifest.permission.READ_CALL_LOG
+     * - Manifest.permission.INTERNET
      */
     requestEssentialPermissions: async () => {
       if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {

@@ -1,3 +1,4 @@
+
 # react-native-android-sinch
 
 React Native Android module for Sinch Flash Call
@@ -68,6 +69,14 @@ const requestReadPhoneStatePermission = async () => {
 };
 
 // Request essential permissions
+/**
+ * @description Request essential permissions for the app to function properly.
+ * This includes:
+ * - Manifest.permission.READ_PHONE_STATE
+ * - Manifest.permission.ACCESS_NETWORK_STATE
+ * - Manifest.permission.READ_CALL_LOG
+ * - Manifest.permission.INTERNET
+ */
 const requestEssentialPermissions = async () => {
   const granted = await SinchFlashCall.requestEssentialPermissions();
   console.log('Essential Permissions:', granted);
@@ -213,5 +222,3 @@ MIT
 Made with [create-react-native-library](https://github.com/callstack/react-native-builder-bob)
 
 ---
-
-This updated README.md file provides detailed steps for using the module, including how to request permissions, initialize verification, verify codes, and manage event listeners. This ensures that users have clear guidance on how to properly integrate and use the `react-native-android-sinch` module in their React Native applications.

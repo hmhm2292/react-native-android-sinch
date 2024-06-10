@@ -81,12 +81,19 @@ class AndroidSinchModule(private val reactContext: ReactApplicationContext) :
         }
 
         val permissionsToRequest = mutableListOf<String>()
-        if (ContextCompat.checkSelfPermission(activity, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED) {
-            permissionsToRequest.add(Manifest.permission.INTERNET)
+        if (ContextCompat.checkSelfPermission(activity, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+            permissionsToRequest.add(Manifest.permission.READ_PHONE_STATE)
+        }
+        if (ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED) {
+            permissionsToRequest.add(Manifest.permission.ACCESS_NETWORK_STATE)
         }
         if (ContextCompat.checkSelfPermission(activity, Manifest.permission.READ_CALL_LOG) != PackageManager.PERMISSION_GRANTED) {
             permissionsToRequest.add(Manifest.permission.READ_CALL_LOG)
         }
+        if (ContextCompat.checkSelfPermission(activity, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED) {
+            permissionsToRequest.add(Manifest.permission.INTERNET)
+        }
+
         if (permissionsToRequest.isNotEmpty()) {
             val permissionAwareActivity = activity as PermissionAwareActivity
             permissionPromises[PERMISSION_REQUEST_CODE_ESSENTIAL] = promise
