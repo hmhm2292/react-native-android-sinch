@@ -27,10 +27,15 @@ class AndroidSinchModule(private val reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext), PermissionListener, VerificationListener, ActivityEventListener {
 
     companion object {
-        private const val PERMISSION_REQUEST_CODE = 5
+        private const val PERMISSION_REQUEST_CODE_INTERNET = 1
+        private const val PERMISSION_REQUEST_CODE_READ_CALL_LOG = 2
+        private const val PERMISSION_REQUEST_CODE_CHANGE_NETWORK_STATE = 3
+        private const val PERMISSION_REQUEST_CODE_ACCESS_NETWORK_STATE = 4
+        private const val PERMISSION_REQUEST_CODE_READ_PHONE_STATE = 5
+        private const val PERMISSION_REQUEST_CODE_ESSENTIAL = 100
     }
 
-    private var permissionPromise: Promise? = null
+    private var permissionPromises: MutableMap<Int, Promise> = mutableMapOf()
     private var verification: Verification? = null
     private var verificationPromise: Promise? = null
 
@@ -43,43 +48,73 @@ class AndroidSinchModule(private val reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun requestPermissions(promise: Promise) {
+    fun requestInternetPermission(promise: Promise) {
+        requestPermission(Manifest.permission.INTERNET, PERMISSION_REQUEST_CODE_INTERNET, promise)
+    }
+
+    @ReactMethod
+    fun requestReadCallLogPermission(promise: Promise) {
+        requestPermission(Manifest.permission.READ_CALL_LOG, PERMISSION_REQUEST_CODE_READ_CALL_LOG, promise)
+    }
+
+    @ReactMethod
+    fun requestChangeNetworkStatePermission(promise: Promise) {
+        requestPermission(Manifest.permission.CHANGE_NETWORK_STATE, PERMISSION_REQUEST_CODE_CHANGE_NETWORK_STATE, promise)
+    }
+
+    @ReactMethod
+    fun requestAccessNetworkStatePermission(promise: Promise) {
+        requestPermission(Manifest.permission.ACCESS_NETWORK_STATE, PERMISSION_REQUEST_CODE_ACCESS_NETWORK_STATE, promise)
+    }
+
+    @ReactMethod
+    fun requestReadPhoneStatePermission(promise: Promise) {
+        requestPermission(Manifest.permission.READ_PHONE_STATE, PERMISSION_REQUEST_CODE_READ_PHONE_STATE, promise)
+    }
+
+    @ReactMethod
+    fun requestEssentialPermissions(promise: Promise) {
         val activity = currentActivity
         if (activity == null) {
             promise.reject("E_ACTIVITY_DOES_NOT_EXIST", "Activity doesn't exist")
             return
         }
-        this.permissionPromise = promise
 
-        if (checkPermissions(activity)) {
-            promise.resolve(true)
-        } else {
+        val permissionsToRequest = mutableListOf<String>()
+        if (ContextCompat.checkSelfPermission(activity, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED) {
+            permissionsToRequest.add(Manifest.permission.INTERNET)
+        }
+        if (ContextCompat.checkSelfPermission(activity, Manifest.permission.READ_CALL_LOG) != PackageManager.PERMISSION_GRANTED) {
+            permissionsToRequest.add(Manifest.permission.READ_CALL_LOG)
+        }
+        if (permissionsToRequest.isNotEmpty()) {
             val permissionAwareActivity = activity as PermissionAwareActivity
+            permissionPromises[PERMISSION_REQUEST_CODE_ESSENTIAL] = promise
             permissionAwareActivity.requestPermissions(
-                arrayOf(
-                    Manifest.permission.READ_PHONE_STATE,
-                    Manifest.permission.ACCESS_NETWORK_STATE,
-                    Manifest.permission.READ_CALL_LOG
-                ),
-                PERMISSION_REQUEST_CODE,
+                permissionsToRequest.toTypedArray(),
+                PERMISSION_REQUEST_CODE_ESSENTIAL,
                 this
             )
+        } else {
+            promise.resolve(true)
         }
     }
 
-    private fun checkPermissions(activity: Activity): Boolean {
-        return ContextCompat.checkSelfPermission(
-            activity,
-            Manifest.permission.READ_PHONE_STATE
-        ) == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(
-                    activity,
-                    Manifest.permission.ACCESS_NETWORK_STATE
-                ) == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(
-                    activity,
-                    Manifest.permission.READ_CALL_LOG
-                ) == PackageManager.PERMISSION_GRANTED
+    private fun requestPermission(permission: String, requestCode: Int, promise: Promise) {
+        val activity = currentActivity
+        if (activity == null) {
+            promise.reject("E_ACTIVITY_DOES_NOT_EXIST", "Activity doesn't exist")
+            return
+        }
+
+        this.permissionPromises[requestCode] = promise
+
+        if (ContextCompat.checkSelfPermission(activity, permission) == PackageManager.PERMISSION_GRANTED) {
+            promise.resolve(true)
+        } else {
+            val permissionAwareActivity = activity as PermissionAwareActivity
+            permissionAwareActivity.requestPermissions(arrayOf(permission), requestCode, this)
+        }
     }
 
     override fun onRequestPermissionsResult(
@@ -87,19 +122,43 @@ class AndroidSinchModule(private val reactContext: ReactApplicationContext) :
         permissions: Array<out String>,
         grantResults: IntArray
     ): Boolean {
-        if (requestCode == PERMISSION_REQUEST_CODE) {
-            val allPermissionsGranted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
-            permissionPromise?.let {
-                if (allPermissionsGranted) {
+        val promise = permissionPromises[requestCode]
+        permissionPromises.remove(requestCode)
+
+        if (requestCode == PERMISSION_REQUEST_CODE_ESSENTIAL) {
+            val allGranted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+            promise?.let {
+                if (allGranted) {
                     it.resolve(true)
                 } else {
-                    it.reject("E_PERMISSIONS_DENIED", "Permissions were denied")
+                    val deniedPermissions = permissions.filterIndexed { index, _ ->
+                        grantResults[index] != PackageManager.PERMISSION_GRANTED
+                    }
+                    // Re-request denied permissions
+                    if (deniedPermissions.isNotEmpty()) {
+                        val activity = currentActivity as PermissionAwareActivity
+                        permissionPromises[requestCode] = it
+                        activity.requestPermissions(
+                            deniedPermissions.toTypedArray(),
+                            requestCode,
+                            this
+                        )
+                    } else {
+                        it.reject("E_PERMISSIONS_DENIED", "Essential permissions were denied")
+                    }
                 }
-                permissionPromise = null
             }
-            return allPermissionsGranted
+        } else {
+            val granted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+            promise?.let {
+                if (granted) {
+                    it.resolve(true)
+                } else {
+                    it.reject("E_PERMISSIONS_DENIED", "Permission was denied")
+                }
+            }
         }
-        return false
+        return true
     }
 
     @ReactMethod
@@ -147,21 +206,17 @@ class AndroidSinchModule(private val reactContext: ReactApplicationContext) :
     @ReactMethod
     fun stopVerification(promise: Promise) {
         if (verification != null) {
-            // Stop the ongoing verification process
             verification?.stop()
             verification = null
 
-            // Resolve the promise passed in with this stop request
             promise.resolve("Verification stopped")
 
-            // If there was an ongoing verification process, also resolve its promise
             if (verificationPromise != null) {
                 verificationPromise?.resolve("Verification stopped due to explicit stop call")
                 verificationPromise = null
                 sendEvent("verificationStopped", "Verification process stopped")
             }
         } else {
-            // If there is no active verification, still resolve the incoming promise
             promise.resolve("No active verification to stop")
         }
     }
@@ -171,7 +226,6 @@ class AndroidSinchModule(private val reactContext: ReactApplicationContext) :
         val verificationMethodType = when (methodType) {
             "FLASHCALL" -> VerificationMethodType.FLASHCALL
             "SMS" -> VerificationMethodType.SMS
-            // Add other method types as needed
             else -> null
         }
 
@@ -241,7 +295,6 @@ class AndroidSinchModule(private val reactContext: ReactApplicationContext) :
         sendEvent("verificationEvent", eventDetails)
     }
 
-    // sends event to JS side
     private fun sendEvent(eventName: String, eventData: String) {
         reactContext
             .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)

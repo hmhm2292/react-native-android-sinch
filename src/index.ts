@@ -23,7 +23,12 @@ type EventMap = {
 type VerificationMethodType = 'FLASHCALL' | 'SMS'; // Add other method types as needed
 
 interface SinchFlashCallInterface {
-  requestPermissions: () => Promise<boolean>;
+  requestInternetPermission(): Promise<boolean>;
+  requestReadCallLogPermission(): Promise<boolean>;
+  requestChangeNetworkStatePermission(): Promise<boolean>;
+  requestAccessNetworkStatePermission(): Promise<boolean>;
+  requestReadPhoneStatePermission(): Promise<boolean>;
+  requestEssentialPermissions(): Promise<boolean>;
   initVerification: (
     phoneNumber: string,
     appKey: string,
@@ -46,18 +51,24 @@ interface SinchFlashCallInterface {
 const SinchFlashCall: SinchFlashCallInterface = (() => {
   const activeListeners = new Map<string, EmitterSubscription>();
 
+  // Helper function to validate E.164 phone number format
+  const isValidE164 = (phoneNumber: string): boolean => {
+    const e164Regex = /^\+[1-9]\d{1,14}$/;
+    return e164Regex.test(phoneNumber);
+  };
+
   return {
     /**
-     * @description Request permissions for  Manifest.permission.READ_PHONE_STATE, Manifest.permission.ACCESS_NETWORK_STATE, Manifest.permission.READ_CALL_LOG for the app to intercept the call
+     * @description Request permission for Manifest.permission.INTERNET
      */
-    requestPermissions: async () => {
+    requestInternetPermission: async () => {
       if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {
         try {
           const granted =
-            await NativeModules.AndroidSinchModule.requestPermissions();
+            await NativeModules.AndroidSinchModule.requestInternetPermission();
           return granted;
         } catch (error) {
-          console.error('Permission request error:', error);
+          console.error('Internet Permission request error:', error);
           return false;
         }
       } else {
@@ -66,13 +77,121 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
     },
 
     /**
-     * @description For testing purposes provide appSecret, for production it is not required,
+     * @description Request permission for Manifest.permission.READ_CALL_LOG
+     */
+    requestReadCallLogPermission: async () => {
+      if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {
+        try {
+          const granted =
+            await NativeModules.AndroidSinchModule.requestReadCallLogPermission();
+          return granted;
+        } catch (error) {
+          console.error('Read Call Log Permission request error:', error);
+          return false;
+        }
+      } else {
+        console.warn('Sinch Flash Call is only available on Android');
+      }
+    },
+
+    /**
+     * @description Request permission for Manifest.permission.CHANGE_NETWORK_STATE
+     */
+    requestChangeNetworkStatePermission: async () => {
+      if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {
+        try {
+          const granted =
+            await NativeModules.AndroidSinchModule.requestChangeNetworkStatePermission();
+          return granted;
+        } catch (error) {
+          console.error(
+            'Change Network State Permission request error:',
+            error
+          );
+          return false;
+        }
+      } else {
+        console.warn('Sinch Flash Call is only available on Android');
+      }
+    },
+
+    /**
+     * @description Request permission for Manifest.permission.ACCESS_NETWORK_STATE
+     */
+    requestAccessNetworkStatePermission: async () => {
+      if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {
+        try {
+          const granted =
+            await NativeModules.AndroidSinchModule.requestAccessNetworkStatePermission();
+          return granted;
+        } catch (error) {
+          console.error(
+            'Access Network State Permission request error:',
+            error
+          );
+          return false;
+        }
+      } else {
+        console.warn('Sinch Flash Call is only available on Android');
+      }
+    },
+
+    /**
+     * @description Request permission for Manifest.permission.READ_PHONE_STATE
+     */
+    requestReadPhoneStatePermission: async () => {
+      if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {
+        try {
+          const granted =
+            await NativeModules.AndroidSinchModule.requestReadPhoneStatePermission();
+          return granted;
+        } catch (error) {
+          console.error('Read Phone State Permission request error:', error);
+          return false;
+        }
+      } else {
+        console.warn('Sinch Flash Call is only available on Android');
+      }
+    },
+
+    /**
+     * @description Request essential permissions for the app to intercept the call.
+     * This includes:
+     * - Manifest.permission.READ_PHONE_STATE
+     * - Manifest.permission.ACCESS_NETWORK_STATE
+     * - Manifest.permission.READ_CALL_LOG
+     */
+    requestEssentialPermissions: async () => {
+      if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {
+        try {
+          const granted =
+            await NativeModules.AndroidSinchModule.requestEssentialPermissions();
+          return granted;
+        } catch (error) {
+          console.error('Essential Permissions request error:', error);
+          return false;
+        }
+      } else {
+        console.warn('Sinch Flash Call is only available on Android');
+      }
+    },
+
+    /**
+     * @description Initialize verification process with the given phone number, appKey, and appSecret.
+     * The phone number must be in E.164 format. Make sure to request necessary permissions before calling this function.
+     * @param phoneNumber Phone number to verify
+     * @param appKey Sinch app key
+     * @param appSecret Sinch app secret (optional)
      */
     initVerification: async (
       phoneNumber: string,
       appKey: string,
       appSecret = ''
     ) => {
+      if (!isValidE164(phoneNumber)) {
+        throw new Error('Phone number must be in E.164 format');
+      }
+
       if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {
         try {
           const result =
@@ -81,7 +200,6 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
               appKey,
               appSecret
             );
-
           return result;
         } catch (error) {
           return error;
@@ -150,7 +268,7 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
     },
 
     /**
-     * @description add event listeners to subscribe to events during the verification process in Sinch Flash Call module.
+     * @description Add event listeners to subscribe to events during the verification process in Sinch Flash Call module.
      */
     addListener: <K extends keyof EventMap>(
       event: K,
@@ -168,7 +286,7 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
     },
 
     /**
-     * @description use to when remove the listeners added.
+     * @description Use to remove the listeners added.
      */
     removeListener: <K extends keyof EventMap>(event: K) => {
       if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {
@@ -185,7 +303,7 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
     },
 
     /**
-     * @description use to when remove all the listeners at once.
+     * @description Use to remove all the listeners at once.
      */
     removeAllListeners: () => {
       if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {

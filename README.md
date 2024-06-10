@@ -1,12 +1,11 @@
 # react-native-android-sinch
 
-react native android module for sinch flash call
+React Native Android module for Sinch Flash Call
 
 ## Installation
 
 ```sh
 npm install react-native-android-sinch
-
 yarn add react-native-android-sinch
 ```
 
@@ -16,33 +15,189 @@ yarn add react-native-android-sinch
 com.sinch.android.sdk.verification:verification-flashcall:2.1.14
 ```
 
+## Note
 
+```
+The android.permission.INTERNET permission is required for the Verification SDK to work. 
+To handle flash call verification automatically android.permission.READ_CALL_LOG is needed.
+In case of seamless method SDK needs android.permission.
+CHANGE_NETWORK_STATE to be able to automatically switch to mobile data for API calls connected with the verification process. 
+Additionally, SDK collects phone metadata information connected with sim cards or phone software version, 
+which are then used to handle early verification rejection rules. 
+For this module to be fully functional android.permission.ACCESS_NETWORK_STATE and android.permission.READ_PHONE_STATE should be granted. 
+These permissions however are not essential.
+```
 
 ## Usage
 
+### Importing the Module
+
 ```js
 import SinchFlashCall from 'react-native-android-sinch';
+```
 
-/**
-  * @description Request permissions for Manifest.permission.READ_PHONE_STATE, Manifest.permission.ACCESS_NETWORK_STATE, Manifest.permission.READ_CALL_LOG for the app to intercept the call
-*/
-const permissionStatus = SinchFlashCall.requestPermission().then((permission) => {
-  console.log(permission)
-})
+### Requesting Permissions
 
-/**
-  * @description For testing purposes provide appSecret, for production it is not required,
-  * Manifest.permission.READ_PHONE_STATE, Manifest.permission.ACCESS_NETWORK_STATE, Manifest.permission.READ_CALL_LOG is needed for verification to work.
-*/
-const verify = SinchFlashCall.initVerification('+12051111111', 'appKeyValue', 'appSecrete').then((result) => {
-  console.log({result})
-})
+You need to request necessary permissions for the module to function properly. Here are the methods to request individual permissions and essential permissions.
 
-/**
-  * @description add event listeners to subscribe to events during the verification process in Sinch Flash Call module.
-*/
-const listener = SinchFlashCall.addListener("verificationSuccess", (data) => {console.log("verificationSuccess", data)})
+```js
+// Request individual permissions
+const requestInternetPermission = async () => {
+  const granted = await SinchFlashCall.requestInternetPermission();
+  console.log('Internet Permission:', granted);
+};
 
+const requestReadCallLogPermission = async () => {
+  const granted = await SinchFlashCall.requestReadCallLogPermission();
+  console.log('Read Call Log Permission:', granted);
+};
+
+const requestChangeNetworkStatePermission = async () => {
+  const granted = await SinchFlashCall.requestChangeNetworkStatePermission();
+  console.log('Change Network State Permission:', granted);
+};
+
+const requestAccessNetworkStatePermission = async () => {
+  const granted = await SinchFlashCall.requestAccessNetworkStatePermission();
+  console.log('Access Network State Permission:', granted);
+};
+
+const requestReadPhoneStatePermission = async () => {
+  const granted = await SinchFlashCall.requestReadPhoneStatePermission();
+  console.log('Read Phone State Permission:', granted);
+};
+
+// Request essential permissions
+const requestEssentialPermissions = async () => {
+  const granted = await SinchFlashCall.requestEssentialPermissions();
+  console.log('Essential Permissions:', granted);
+};
+
+// Example usage
+requestInternetPermission();
+requestReadCallLogPermission();
+requestChangeNetworkStatePermission();
+requestAccessNetworkStatePermission();
+requestReadPhoneStatePermission();
+requestEssentialPermissions();
+```
+
+### Initializing Verification
+
+Ensure that the phone number is in E.164 format. The essential permissions should be requested before calling this function.
+
+```js
+const initVerification = async () => {
+  try {
+    const result = await SinchFlashCall.initVerification('+12051111111', 'appKeyValue', 'appSecret');
+    console.log('Verification initiated:', result);
+  } catch (error) {
+    console.error('Verification initiation error:', error);
+  }
+};
+
+// Example usage
+initVerification();
+```
+
+### Verifying Code
+
+If the SDK fails to intercept the call automatically, you can verify the code manually using the received call number.
+
+```js
+const verifyCode = async (code, methodType) => {
+  try {
+    const result = await SinchFlashCall.verifyCode(code, methodType);
+    console.log('Code verified:', result);
+  } catch (error) {
+    console.error('Verify code error:', error);
+  }
+};
+
+// Example usage
+verifyCode('12345', 'FLASHCALL');
+```
+
+### Stopping Verification
+
+Stop the ongoing verification process if needed.
+
+```js
+const stopVerification = async () => {
+  try {
+    const result = await SinchFlashCall.stopVerification();
+    console.log('Verification stopped:', result);
+  } catch (error) {
+    console.error('Stop verification error:', error);
+  }
+};
+
+// Example usage
+stopVerification();
+```
+
+### Getting the Last Call Number from Call Log
+
+Retrieve the last call number from the call log to use in manual verification.
+
+```js
+const getLastCallNumberFromCallLog = async () => {
+  try {
+    const number = await SinchFlashCall.getLastCallNumberFromCallLog();
+    console.log('Last call number:', number);
+  } catch (error) {
+    console.error('Get last call number error:', error);
+  }
+};
+
+// Example usage
+getLastCallNumberFromCallLog();
+```
+
+### Adding Event Listeners
+
+Subscribe to events during the verification process.
+
+```js
+const addListener = () => {
+  SinchFlashCall.addListener("verificationSuccess", (data) => {
+    console.log("verificationSuccess", data);
+  });
+  
+  SinchFlashCall.addListener("verificationFailed", (data) => {
+    console.log("verificationFailed", data);
+  });
+};
+
+// Example usage
+addListener();
+```
+
+### Removing Event Listeners
+
+Remove event listeners when they are no longer needed.
+
+```js
+const removeListener = () => {
+  SinchFlashCall.removeListener("verificationSuccess");
+  SinchFlashCall.removeListener("verificationFailed");
+};
+
+// Example usage
+removeListener();
+```
+
+### Removing All Event Listeners
+
+Remove all event listeners at once.
+
+```js
+const removeAllListeners = () => {
+  SinchFlashCall.removeAllListeners();
+};
+
+// Example usage
+removeAllListeners();
 ```
 
 ## Contributing
@@ -56,3 +211,7 @@ MIT
 ---
 
 Made with [create-react-native-library](https://github.com/callstack/react-native-builder-bob)
+
+---
+
+This updated README.md file provides detailed steps for using the module, including how to request permissions, initialize verification, verify codes, and manage event listeners. This ensures that users have clear guidance on how to properly integrate and use the `react-native-android-sinch` module in their React Native applications.
