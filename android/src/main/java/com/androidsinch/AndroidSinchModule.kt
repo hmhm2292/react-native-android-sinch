@@ -81,6 +81,8 @@ class AndroidSinchModule(private val reactContext: ReactApplicationContext) :
         }
 
         val permissionsToRequest = mutableListOf<String>()
+        val deniedPermissions = mutableListOf<String>()
+
         if (ContextCompat.checkSelfPermission(activity, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
             permissionsToRequest.add(Manifest.permission.READ_PHONE_STATE)
         }
@@ -133,12 +135,14 @@ class AndroidSinchModule(private val reactContext: ReactApplicationContext) :
         permissionPromises.remove(requestCode)
 
         if (requestCode == PERMISSION_REQUEST_CODE_ESSENTIAL) {
-            val allGranted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+            val deniedPermissions = permissions.filterIndexed { index, _ ->
+                grantResults[index] != PackageManager.PERMISSION_GRANTED
+            }
             promise?.let {
-                if (allGranted) {
+                if (deniedPermissions.isEmpty()) {
                     it.resolve(true)
                 } else {
-                    it.reject("E_PERMISSIONS_DENIED", "Essential permissions were denied")
+                    it.reject("E_PERMISSIONS_DENIED", deniedPermissions.joinToString(", "))
                 }
             }
         } else {
