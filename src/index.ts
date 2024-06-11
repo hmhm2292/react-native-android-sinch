@@ -28,6 +28,7 @@ type PermissionStatus =
   | 'denied'
   | 'unavailable'
   | 'blocked'
+  | 'partial'
   | 'error';
 
 interface SinchFlashCallInterface {
@@ -181,16 +182,22 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
           const statuses =
             await NativeModules.AndroidSinchModule.requestEssentialPermissions();
           const statusValues = Object.values(statuses);
+          console.log({ statuses, statusValues });
 
           if (statusValues.every((status) => status === 'granted')) {
             return 'granted';
-          } else if (statusValues.some((status) => status === 'denied')) {
+          } else if (statusValues.every((status) => status === 'denied')) {
             console.warn('Essential Permissions denied:', statuses);
             return 'denied';
           } else if (statusValues.every((status) => status === 'unavailable')) {
+            console.warn('Essential Permissions unavailable:', statuses);
             return 'unavailable';
+          } else if (statusValues.every((status) => status === 'blocked')) {
+            console.warn('Essential Permissions blocked:', statuses);
+            return 'blocked';
           } else {
-            return 'error';
+            console.warn('Essential Permissions partially granted:', statuses);
+            return 'partial';
           }
         } catch (error) {
           console.error('Essential Permissions request error:', error);
