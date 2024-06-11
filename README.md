@@ -33,7 +33,7 @@ These permissions however are not essential.
 ### Importing the Module
 
 ```js
-import SinchFlashCall from 'react-native-android-sinch';
+import SinchFlashCall, { PermissionStatus, VerificationMethodType } from 'react-native-android-sinch';
 ```
 
 ### Requesting Permissions
@@ -43,27 +43,27 @@ You need to request necessary permissions for the module to function properly. H
 ```js
 // Request individual permissions
 const requestInternetPermission = async () => {
-  const status = await SinchFlashCall.requestInternetPermission();
+  const status: PermissionStatus = await SinchFlashCall.requestInternetPermission();
   console.log('Internet Permission:', status);
 };
 
 const requestReadCallLogPermission = async () => {
-  const status = await SinchFlashCall.requestReadCallLogPermission();
+  const status: PermissionStatus = await SinchFlashCall.requestReadCallLogPermission();
   console.log('Read Call Log Permission:', status);
 };
 
 const requestChangeNetworkStatePermission = async () => {
-  const status = await SinchFlashCall.requestChangeNetworkStatePermission();
+  const status: PermissionStatus = await SinchFlashCall.requestChangeNetworkStatePermission();
   console.log('Change Network State Permission:', status);
 };
 
 const requestAccessNetworkStatePermission = async () => {
-  const status = await SinchFlashCall.requestAccessNetworkStatePermission();
+  const status: PermissionStatus = await SinchFlashCall.requestAccessNetworkStatePermission();
   console.log('Access Network State Permission:', status);
 };
 
 const requestReadPhoneStatePermission = async () => {
-  const status = await SinchFlashCall.requestReadPhoneStatePermission();
+  const status: PermissionStatus = await SinchFlashCall.requestReadPhoneStatePermission();
   console.log('Read Phone State Permission:', status);
 };
 
@@ -77,7 +77,7 @@ const requestReadPhoneStatePermission = async () => {
  * - Manifest.permission.INTERNET
  */
 const requestEssentialPermissions = async () => {
-  const status = await SinchFlashCall.requestEssentialPermissions();
+  const status: PermissionStatus = await SinchFlashCall.requestEssentialPermissions();
   console.log('Essential Permissions:', status);
 };
 
@@ -221,5 +221,3 @@ MIT
 Made with [create-react-native-library](https://github.com/callstack/react-native-builder-bob)
 
 ---
-
-

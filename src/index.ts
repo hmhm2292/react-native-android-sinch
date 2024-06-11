@@ -6,12 +6,12 @@ import {
 } from 'react-native';
 
 // Define types for the events data if they are known
-interface EventData {
+export interface EventData {
   message: string; // Example type, adjust according to actual data
 }
 
 // Mapping of event names to their expected data types
-type EventMap = {
+export type EventMap = {
   verificationSuccess: EventData;
   verificationFailed: EventData;
   verificationInitiated: EventData;
@@ -20,10 +20,10 @@ type EventMap = {
 };
 
 // Define the types for VerificationMethodType
-type VerificationMethodType = 'FLASHCALL' | 'SMS'; // Add other method types as needed
+export type VerificationMethodType = 'FLASHCALL' | 'SMS'; // Add other method types as needed
 
 // Define the types for PermissionStatus
-type PermissionStatus =
+export type PermissionStatus =
   | 'granted'
   | 'denied'
   | 'unavailable'
@@ -31,7 +31,7 @@ type PermissionStatus =
   | 'partial'
   | 'error';
 
-interface SinchFlashCallInterface {
+export interface SinchFlashCallInterface {
   requestInternetPermission(): Promise<PermissionStatus>;
   requestReadCallLogPermission(): Promise<PermissionStatus>;
   requestChangeNetworkStatePermission(): Promise<PermissionStatus>;
@@ -57,6 +57,8 @@ interface SinchFlashCallInterface {
   removeAllListeners: () => void;
 }
 
+const isDevEnvironment = __DEV__;
+
 const SinchFlashCall: SinchFlashCallInterface = (() => {
   const activeListeners = new Map<string, EmitterSubscription>();
 
@@ -64,6 +66,24 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
   const isValidE164 = (phoneNumber: string): boolean => {
     const e164Regex = /^\+[1-9]\d{1,14}$/;
     return e164Regex.test(phoneNumber);
+  };
+
+  const log = (...args: any[]) => {
+    if (isDevEnvironment) {
+      console.log(...args);
+    }
+  };
+
+  const warn = (...args: any[]) => {
+    if (isDevEnvironment) {
+      console.warn(...args);
+    }
+  };
+
+  const error = (...args: any[]) => {
+    if (isDevEnvironment) {
+      console.error(...args);
+    }
   };
 
   return {
@@ -76,12 +96,12 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
           const status =
             await NativeModules.AndroidSinchModule.requestInternetPermission();
           return status;
-        } catch (error) {
-          console.error('Internet Permission request error:', error);
+        } catch (err) {
+          error('Internet Permission request error:', err);
           return 'error';
         }
       } else {
-        console.warn('Sinch Flash Call is only available on Android');
+        warn('Sinch Flash Call is only available on Android');
         return 'unavailable';
       }
     },
@@ -95,12 +115,12 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
           const status =
             await NativeModules.AndroidSinchModule.requestReadCallLogPermission();
           return status;
-        } catch (error) {
-          console.error('Read Call Log Permission request error:', error);
+        } catch (err) {
+          error('Read Call Log Permission request error:', err);
           return 'error';
         }
       } else {
-        console.warn('Sinch Flash Call is only available on Android');
+        warn('Sinch Flash Call is only available on Android');
         return 'unavailable';
       }
     },
@@ -114,15 +134,12 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
           const status =
             await NativeModules.AndroidSinchModule.requestChangeNetworkStatePermission();
           return status;
-        } catch (error) {
-          console.error(
-            'Change Network State Permission request error:',
-            error
-          );
+        } catch (err) {
+          error('Change Network State Permission request error:', err);
           return 'error';
         }
       } else {
-        console.warn('Sinch Flash Call is only available on Android');
+        warn('Sinch Flash Call is only available on Android');
         return 'unavailable';
       }
     },
@@ -136,15 +153,12 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
           const status =
             await NativeModules.AndroidSinchModule.requestAccessNetworkStatePermission();
           return status;
-        } catch (error) {
-          console.error(
-            'Access Network State Permission request error:',
-            error
-          );
+        } catch (err) {
+          error('Access Network State Permission request error:', err);
           return 'error';
         }
       } else {
-        console.warn('Sinch Flash Call is only available on Android');
+        warn('Sinch Flash Call is only available on Android');
         return 'unavailable';
       }
     },
@@ -158,12 +172,12 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
           const status =
             await NativeModules.AndroidSinchModule.requestReadPhoneStatePermission();
           return status;
-        } catch (error) {
-          console.error('Read Phone State Permission request error:', error);
+        } catch (err) {
+          error('Read Phone State Permission request error:', err);
           return 'error';
         }
       } else {
-        console.warn('Sinch Flash Call is only available on Android');
+        warn('Sinch Flash Call is only available on Android');
         return 'unavailable';
       }
     },
@@ -182,29 +196,29 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
           const statuses =
             await NativeModules.AndroidSinchModule.requestEssentialPermissions();
           const statusValues = Object.values(statuses);
-          console.log({ statuses, statusValues });
+          log({ statuses, statusValues });
 
           if (statusValues.every((status) => status === 'granted')) {
             return 'granted';
           } else if (statusValues.every((status) => status === 'denied')) {
-            console.warn('Essential Permissions denied:', statuses);
+            warn('Essential Permissions denied:', statuses);
             return 'denied';
           } else if (statusValues.every((status) => status === 'unavailable')) {
-            console.warn('Essential Permissions unavailable:', statuses);
+            warn('Essential Permissions unavailable:', statuses);
             return 'unavailable';
           } else if (statusValues.every((status) => status === 'blocked')) {
-            console.warn('Essential Permissions blocked:', statuses);
+            warn('Essential Permissions blocked:', statuses);
             return 'blocked';
           } else {
-            console.warn('Essential Permissions partially granted:', statuses);
+            warn('Essential Permissions partially granted:', statuses);
             return 'partial';
           }
-        } catch (error) {
-          console.error('Essential Permissions request error:', error);
+        } catch (err) {
+          error('Essential Permissions request error:', err);
           return 'error';
         }
       } else {
-        console.warn('Sinch Flash Call is only available on Android');
+        warn('Sinch Flash Call is only available on Android');
         return 'unavailable';
       }
     },
@@ -234,11 +248,11 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
               appSecret
             );
           return result;
-        } catch (error) {
-          return error;
+        } catch (err) {
+          return err;
         }
       } else {
-        console.warn('Sinch Flash Call is only available on Android');
+        warn('Sinch Flash Call is only available on Android');
         return 'unavailable';
       }
     },
@@ -252,11 +266,11 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
           const number =
             await NativeModules.AndroidSinchModule.getLastCallNumber();
           return number;
-        } catch (error) {
-          return error;
+        } catch (err) {
+          return err;
         }
       } else {
-        console.warn('Sinch Flash Call is only available on Android');
+        warn('Sinch Flash Call is only available on Android');
         return null;
       }
     },
@@ -277,11 +291,11 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
             methodType
           );
           return result;
-        } catch (error) {
-          return error;
+        } catch (err) {
+          return err;
         }
       } else {
-        console.warn('Sinch Flash Call is only available on Android');
+        warn('Sinch Flash Call is only available on Android');
         return 'unavailable';
       }
     },
@@ -295,11 +309,11 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
           const result =
             await NativeModules.AndroidSinchModule.stopVerification();
           return result;
-        } catch (error) {
-          return error;
+        } catch (err) {
+          return err;
         }
       } else {
-        console.warn('Sinch Flash Call is only available on Android');
+        warn('Sinch Flash Call is only available on Android');
         return 'unavailable';
       }
     },
@@ -318,7 +332,7 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
         );
         activeListeners.set(event, subscription);
       } else {
-        console.warn('Sinch Flash Call is only available on Android');
+        warn('Sinch Flash Call is only available on Android');
       }
     },
 
@@ -335,7 +349,7 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
           }
         }
       } else {
-        console.warn('Sinch Flash Call is only available on Android');
+        warn('Sinch Flash Call is only available on Android');
       }
     },
 
@@ -349,7 +363,7 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
         });
         activeListeners.clear();
       } else {
-        console.warn('Sinch Flash Call is only available on Android');
+        warn('Sinch Flash Call is only available on Android');
       }
     },
   };
