@@ -2,8 +2,10 @@ package com.androidsinch
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.SharedPreferences
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.*
@@ -33,14 +35,17 @@ class AndroidSinchModule(private val reactContext: ReactApplicationContext) :
         private const val PERMISSION_REQUEST_CODE_ACCESS_NETWORK_STATE = 4
         private const val PERMISSION_REQUEST_CODE_READ_PHONE_STATE = 5
         private const val PERMISSION_REQUEST_CODE_ESSENTIAL = 100
+        private const val PREFS_NAME = "AndroidSinchPermissions"
     }
 
     private var permissionPromises: MutableMap<Int, Promise> = mutableMapOf()
     private var verification: Verification? = null
     private var verificationPromise: Promise? = null
+    private val sharedPreferences: SharedPreferences
 
     init {
         reactContext.addActivityEventListener(this)
+        sharedPreferences = reactContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
 
     override fun getName(): String {
@@ -81,24 +86,32 @@ class AndroidSinchModule(private val reactContext: ReactApplicationContext) :
         }
 
         val permissionsToRequest = mutableListOf<String>()
-        val deniedPermissions = mutableListOf<String>()
 
-        if (ContextCompat.checkSelfPermission(activity, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-            permissionsToRequest.add(Manifest.permission.READ_PHONE_STATE)
+        if (!isPermissionRequestedBefore(Manifest.permission.READ_PHONE_STATE)) {
+            if (ContextCompat.checkSelfPermission(activity, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.READ_PHONE_STATE)
+            }
         }
-        if (ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED) {
-            permissionsToRequest.add(Manifest.permission.ACCESS_NETWORK_STATE)
+        if (!isPermissionRequestedBefore(Manifest.permission.ACCESS_NETWORK_STATE)) {
+            if (ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.ACCESS_NETWORK_STATE)
+            }
         }
-        if (ContextCompat.checkSelfPermission(activity, Manifest.permission.READ_CALL_LOG) != PackageManager.PERMISSION_GRANTED) {
-            permissionsToRequest.add(Manifest.permission.READ_CALL_LOG)
+        if (!isPermissionRequestedBefore(Manifest.permission.READ_CALL_LOG)) {
+            if (ContextCompat.checkSelfPermission(activity, Manifest.permission.READ_CALL_LOG) != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.READ_CALL_LOG)
+            }
         }
-        if (ContextCompat.checkSelfPermission(activity, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED) {
-            permissionsToRequest.add(Manifest.permission.INTERNET)
+        if (!isPermissionRequestedBefore(Manifest.permission.INTERNET)) {
+            if (ContextCompat.checkSelfPermission(activity, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.INTERNET)
+            }
         }
 
         if (permissionsToRequest.isNotEmpty()) {
             val permissionAwareActivity = activity as PermissionAwareActivity
             permissionPromises[PERMISSION_REQUEST_CODE_ESSENTIAL] = promise
+            markPermissionsRequested(permissionsToRequest)
             permissionAwareActivity.requestPermissions(
                 permissionsToRequest.toTypedArray(),
                 PERMISSION_REQUEST_CODE_ESSENTIAL,
@@ -118,11 +131,41 @@ class AndroidSinchModule(private val reactContext: ReactApplicationContext) :
 
         this.permissionPromises[requestCode] = promise
 
+        if (isPermissionRequestedBefore(permission)) {
+            if (ContextCompat.checkSelfPermission(activity, permission) != PackageManager.PERMISSION_GRANTED) {
+                promise.reject("E_PERMISSION_DENIED_PREVIOUSLY", permission)
+            } else {
+                promise.resolve(true)
+            }
+            return
+        }
+
         if (ContextCompat.checkSelfPermission(activity, permission) == PackageManager.PERMISSION_GRANTED) {
             promise.resolve(true)
         } else {
             val permissionAwareActivity = activity as PermissionAwareActivity
+            markPermissionRequested(permission)
             permissionAwareActivity.requestPermissions(arrayOf(permission), requestCode, this)
+        }
+    }
+
+    private fun isPermissionRequestedBefore(permission: String): Boolean {
+        return sharedPreferences.getBoolean(permission, false)
+    }
+
+    private fun markPermissionRequested(permission: String) {
+        with(sharedPreferences.edit()) {
+            putBoolean(permission, true)
+            apply()
+        }
+    }
+
+    private fun markPermissionsRequested(permissions: List<String>) {
+        with(sharedPreferences.edit()) {
+            permissions.forEach { permission ->
+                putBoolean(permission, true)
+            }
+            apply()
         }
     }
 
@@ -151,7 +194,8 @@ class AndroidSinchModule(private val reactContext: ReactApplicationContext) :
                 if (granted) {
                     it.resolve(true)
                 } else {
-                    it.reject("E_PERMISSIONS_DENIED", "Permission was denied")
+                    val deniedPermission = permissions[grantResults.indexOfFirst { it != PackageManager.PERMISSION_GRANTED }]
+                    it.reject("E_PERMISSIONS_DENIED", deniedPermission)
                 }
             }
         }
