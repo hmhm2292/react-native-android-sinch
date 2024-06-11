@@ -22,13 +22,21 @@ type EventMap = {
 // Define the types for VerificationMethodType
 type VerificationMethodType = 'FLASHCALL' | 'SMS'; // Add other method types as needed
 
+// Define the types for PermissionStatus
+type PermissionStatus =
+  | 'granted'
+  | 'denied'
+  | 'unavailable'
+  | 'blocked'
+  | 'error';
+
 interface SinchFlashCallInterface {
-  requestInternetPermission(): Promise<boolean>;
-  requestReadCallLogPermission(): Promise<boolean>;
-  requestChangeNetworkStatePermission(): Promise<boolean>;
-  requestAccessNetworkStatePermission(): Promise<boolean>;
-  requestReadPhoneStatePermission(): Promise<boolean>;
-  requestEssentialPermissions(): Promise<boolean>;
+  requestInternetPermission(): Promise<PermissionStatus>;
+  requestReadCallLogPermission(): Promise<PermissionStatus>;
+  requestChangeNetworkStatePermission(): Promise<PermissionStatus>;
+  requestAccessNetworkStatePermission(): Promise<PermissionStatus>;
+  requestReadPhoneStatePermission(): Promise<PermissionStatus>;
+  requestEssentialPermissions(): Promise<PermissionStatus>;
   initVerification: (
     phoneNumber: string,
     appKey: string,
@@ -64,15 +72,16 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
     requestInternetPermission: async () => {
       if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {
         try {
-          const granted =
+          const status =
             await NativeModules.AndroidSinchModule.requestInternetPermission();
-          return granted;
+          return status;
         } catch (error) {
           console.error('Internet Permission request error:', error);
-          return false;
+          return 'error';
         }
       } else {
         console.warn('Sinch Flash Call is only available on Android');
+        return 'unavailable';
       }
     },
 
@@ -82,15 +91,16 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
     requestReadCallLogPermission: async () => {
       if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {
         try {
-          const granted =
+          const status =
             await NativeModules.AndroidSinchModule.requestReadCallLogPermission();
-          return granted;
+          return status;
         } catch (error) {
           console.error('Read Call Log Permission request error:', error);
-          return false;
+          return 'error';
         }
       } else {
         console.warn('Sinch Flash Call is only available on Android');
+        return 'unavailable';
       }
     },
 
@@ -100,18 +110,19 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
     requestChangeNetworkStatePermission: async () => {
       if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {
         try {
-          const granted =
+          const status =
             await NativeModules.AndroidSinchModule.requestChangeNetworkStatePermission();
-          return granted;
+          return status;
         } catch (error) {
           console.error(
             'Change Network State Permission request error:',
             error
           );
-          return false;
+          return 'error';
         }
       } else {
         console.warn('Sinch Flash Call is only available on Android');
+        return 'unavailable';
       }
     },
 
@@ -121,18 +132,19 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
     requestAccessNetworkStatePermission: async () => {
       if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {
         try {
-          const granted =
+          const status =
             await NativeModules.AndroidSinchModule.requestAccessNetworkStatePermission();
-          return granted;
+          return status;
         } catch (error) {
           console.error(
             'Access Network State Permission request error:',
             error
           );
-          return false;
+          return 'error';
         }
       } else {
         console.warn('Sinch Flash Call is only available on Android');
+        return 'unavailable';
       }
     },
 
@@ -142,15 +154,16 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
     requestReadPhoneStatePermission: async () => {
       if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {
         try {
-          const granted =
+          const status =
             await NativeModules.AndroidSinchModule.requestReadPhoneStatePermission();
-          return granted;
+          return status;
         } catch (error) {
           console.error('Read Phone State Permission request error:', error);
-          return false;
+          return 'error';
         }
       } else {
         console.warn('Sinch Flash Call is only available on Android');
+        return 'unavailable';
       }
     },
 
@@ -165,15 +178,27 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
     requestEssentialPermissions: async () => {
       if (Platform.OS === 'android' && NativeModules.AndroidSinchModule) {
         try {
-          const granted =
+          const statuses =
             await NativeModules.AndroidSinchModule.requestEssentialPermissions();
-          return granted;
+          const statusValues = Object.values(statuses);
+
+          if (statusValues.every((status) => status === 'granted')) {
+            return 'granted';
+          } else if (statusValues.some((status) => status === 'denied')) {
+            console.warn('Essential Permissions denied:', statuses);
+            return 'denied';
+          } else if (statusValues.every((status) => status === 'unavailable')) {
+            return 'unavailable';
+          } else {
+            return 'error';
+          }
         } catch (error) {
           console.error('Essential Permissions request error:', error);
-          return false;
+          return 'error';
         }
       } else {
         console.warn('Sinch Flash Call is only available on Android');
+        return 'unavailable';
       }
     },
 
@@ -207,6 +232,7 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
         }
       } else {
         console.warn('Sinch Flash Call is only available on Android');
+        return 'unavailable';
       }
     },
 
@@ -224,6 +250,7 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
         }
       } else {
         console.warn('Sinch Flash Call is only available on Android');
+        return null;
       }
     },
 
@@ -248,6 +275,7 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
         }
       } else {
         console.warn('Sinch Flash Call is only available on Android');
+        return 'unavailable';
       }
     },
 
@@ -265,6 +293,7 @@ const SinchFlashCall: SinchFlashCallInterface = (() => {
         }
       } else {
         console.warn('Sinch Flash Call is only available on Android');
+        return 'unavailable';
       }
     },
 
